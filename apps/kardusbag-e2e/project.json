@@ -1,0 +1,17 @@
+{
+  "name": "kardusbag-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "implicitDependencies": ["kardusbag"],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "dependsOn": ["kardusbag:build", "kardusbag:serve"],
+      "options": {
+        "jestConfig": "apps/kardusbag-e2e/jest.config.cts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}
