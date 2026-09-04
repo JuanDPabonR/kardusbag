@@ -1,10 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { eq, and, isNull } from 'drizzle-orm';
-import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { bagsTable } from '@kardusbag/database';
 import { BagRepositoryPort } from '../../domain/ports/bag-repository.port';
 import { Bag } from '../../domain/entities/bag.entity';
 import { BagMapper } from './bag.mapper';
-import { bagsTable } from '@kardusbag/database';
 
 export const DRIZZLE_DB = Symbol('DRIZZLE_DB');
 
@@ -12,7 +12,7 @@ export const DRIZZLE_DB = Symbol('DRIZZLE_DB');
 export class BagRepository implements BagRepositoryPort {
   constructor(
     @Inject(DRIZZLE_DB)
-    private readonly db: NodePgDatabase,
+    private readonly db: PostgresJsDatabase,
   ) {}
 
   async findById(id: string): Promise<Bag | null> {

@@ -1,0 +1,96 @@
+services:
+  # Base de Datos
+  postgres:
+    image: postgres:16-alpine
+    container_name: platform_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: platform_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal_network
+
+  # Reverse Proxy & Load Balancer
+  traefik:
+    image: traefik:v3.1
+    container_name: platform_load_balancer
+    command:
+      - '--api.insecure=true' # Dashboard Traefik en puerto 8080
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.web.address=:80'
+    ports:
+      - '80:80' # Entrada HTTP balanceada
+      - '8080:8080' # Dashboard UI de Traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal_network
+
+  # Aplicación NestJS (2 réplicas balanceadas)
+  kardusbag:
+    build:
+      context: .
+      dockerfile: libs/infra/docker/Dockerfile.api
+      args:
+        APP_NAME: kardusbag
+    environment:
+      DATABASE_URL: postgresql://kardus_app:kardus_local_secret@localhost:5432/kardusbag_dev
+      PORT: 3000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
+    depends_on:
+      - postgres
+    deploy:
+      replicas: 2
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.public-api.rule=PathPrefix(`/`)'
+      - 'traefik.http.routers.public-api.entrypoints=web'
+      - 'traefik.http.services.public-api.loadbalancer.server.port=3000'
+    networks:
+      - internal_network
+
+  # Métricas: Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: platform_prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - '9090:9090'
+    networks:
+      - internal_network
+
+  # Trazas: Grafana Tempo
+  tempo:
+    image: grafana/tempo:latest
+    container_name: platform_tempo
+    command: ['-config.file=/etc/tempo.yaml']
+    volumes:
+      - ./infra/monitoring/tempo.yaml:/etc/tempo.yaml
+    ports:
+      - '4318:4318' # OTLP HTTP receiver
+    networks:
+      - internal_network
+
+  # Visualización: Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: platform_grafana
+    ports:
+      - '3001:3000'
+    networks:
+      - internal_network
+
+networks:
+  internal_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

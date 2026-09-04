@@ -1,0 +1,16 @@
+node_modules
+dist
+tmp
+out-tsc
+.nx
+.git
+.github
+.husky
+.vscode
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env*
+coverage
