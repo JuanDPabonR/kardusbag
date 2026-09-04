@@ -83,8 +83,14 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: platform_grafana
+    restart: unless-stopped
     ports:
       - '3001:3000'
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
     networks:
       - internal_network
 

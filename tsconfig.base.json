@@ -18,7 +18,8 @@
     "paths": {
       "@kardusbag/core": ["./libs/core/src/index.ts"],
       "@kardusbag/database": ["./libs/database/src/index.ts"],
-      "@kardusbag/bag": ["./libs/domains/bag/src/index.ts"]
+      "@kardusbag/bag": ["./libs/domains/bag/src/index.ts"],
+      "@kardusbag/shared": ["./libs/shared/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

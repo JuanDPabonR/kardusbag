@@ -2,29 +2,15 @@ import { Injectable, Inject } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   BAG_REPOSITORY_PORT,
-  BagRepositoryPort,
+  type BagRepositoryPort,
 } from '../../domain/ports/bag-repository.port';
-import {
-  BagEntity,
-  BagDimensions,
-  Bag,
-} from '../../domain/entities/bag.entity';
+import { type BagEntity, Bag } from '../../domain/entities/bag.entity';
+import { BagAlreadyExistsException } from '../../domain/exceptions/bag.exceptions';
 
-export interface CreateBagCommand {
-  categoryId?: string;
-  name: string;
-  slug: string;
-  skuPrefix?: string;
-  description?: string;
-  shortDescription?: string;
-  basePrice: number;
-  compareAtPrice?: number;
-  material?: string;
-  dimensions?: BagDimensions;
-  capacityLiters?: number;
-  weightGrams?: number;
-  hasLaptopSleeve?: boolean;
-}
+export type CreateBagCommand = Omit<
+  BagEntity,
+  'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
+>;
 
 @Injectable()
 export class CreateBagUseCase {
@@ -36,9 +22,7 @@ export class CreateBagUseCase {
   async execute(command: CreateBagCommand): Promise<Bag> {
     const existing = await this.bagRepository.findBySlug(command.slug);
     if (existing) {
-      throw new Error(
-        `Ya existe un bolso registrado con el slug "${command.slug}".`,
-      );
+      throw new BagAlreadyExistsException(command.slug);
     }
 
     const newBag = new Bag({

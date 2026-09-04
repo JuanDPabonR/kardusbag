@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import {
   BAG_REPOSITORY_PORT,
-  BagRepositoryPort,
+  type BagRepositoryPort,
 } from '../../domain/ports/bag-repository.port';
-import { BagNotFoundException } from '../../domain/exceptions/bag-not-found.exception';
+import { BagNotFoundException } from '../../domain/exceptions/bag.exceptions';
 import { Bag } from '../../domain/entities/bag.entity';
 
 @Injectable()
