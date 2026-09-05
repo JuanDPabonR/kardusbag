@@ -17,3 +17,11 @@ http://localhost:4318
 # Loki
 
 http://localhost:3100
+
+# Traefik Dashboard
+
+http://localhost:8080
+
+# Drizzle Studio
+
+http://localhost:3003

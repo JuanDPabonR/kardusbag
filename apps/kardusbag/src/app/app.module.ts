@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { BagDomainModule } from '@kardusbag/bag';
 import { BagController } from './bags/bag.controller';
-import { AllExceptionsFilter } from '@kardusbag/shared';
+import { AllExceptionsFilter, ClerkAuthGuard } from '@kardusbag/shared';
+import { AuthController } from './auth/controllers/auth.controller';
+import { AuthSyncController } from './auth/controllers/auth-sync.controller';
 
 @Module({
   imports: [
@@ -55,11 +57,15 @@ import { AllExceptionsFilter } from '@kardusbag/shared';
     }),
     BagDomainModule,
   ],
-  controllers: [BagController],
+  controllers: [BagController, AuthController, AuthSyncController],
   providers: [
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ClerkAuthGuard,
     },
   ],
 })
