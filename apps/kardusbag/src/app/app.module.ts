@@ -5,8 +5,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { BagDomainModule } from '@kardusbag/bag';
 import { BagController } from './bags/bag.controller';
 import { AllExceptionsFilter, ClerkAuthGuard } from '@kardusbag/shared';
-import { AuthController } from './auth/controllers/auth.controller';
-import { AuthSyncController } from './auth/controllers/auth-sync.controller';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -56,8 +55,9 @@ import { AuthSyncController } from './auth/controllers/auth-sync.controller';
       path: '/metrics',
     }),
     BagDomainModule,
+    AuthModule,
   ],
-  controllers: [BagController, AuthController, AuthSyncController],
+  controllers: [BagController],
   providers: [
     {
       provide: APP_FILTER,
