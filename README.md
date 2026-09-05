@@ -1,102 +1,222 @@
-# Kardusbag
+# 🛍️ KardusBag Platform
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Plataforma de E-Commerce moderna y escalable basada en una arquitectura **Monorepo (Nx)**, **Clean Architecture (DDD / Hexagonal)** y un stack completo de **Observabilidad y Microservicios**.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+---
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/nest?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 📑 Tabla de Contenidos
 
-## Run tasks
+- [Características Principales](#-características-principales)
+- [Stack Tecnológico](#-stack-tecnológico)
+- [Arquitectura del Proyecto](#-arquitectura-del-proyecto)
+- [Estructura del Monorepo](#-estructura-del-monorepo)
+- [Requisitos Previos](#-requisitos-previos)
+- [Variables de Entorno](#-variables-de-entorno)
+- [Puesta en Marcha](#-puesta-en-marcha)
+  - [1. Infraestructura con Docker](#1-infraestructura-con-docker)
+  - [2. Base de Datos y Migraciones](#2-base-de-datos-y-migraciones)
+  - [3. Ejecución de las Aplicaciones](#3-ejecución-de-las-aplicaciones)
+- [Observabilidad y Monitoreo](#-observabilidad-y-monitoreo)
+- [Autenticación y Seguridad](#-autenticación-y-seguridad)
+- [Scripts Disponibles](#-scripts-disponibles)
 
-To run the dev server for your app, use:
+---
 
-```sh
-npx nx serve kardusbag
+## ✨ Características Principales
+
+- 🏗️ **Monorepo con Nx**: Gestión eficiente de múltiples aplicaciones y bibliotecas compartidas.
+- 📐 **Clean Architecture & DDD**: Separación estricta de responsabilidades (Domain, Application, Infrastructure).
+- 🗄️ **Drizzle ORM & PostgreSQL**: Modelado de datos tipado en TypeScript y migraciones automatizadas.
+- 📊 **Full Observability Suite**: Trazabilidad distribuida (Tempo / OpenTelemetry), Métricas (Prometheus), Logs estructurados (Pino + Loki) y Paneles (Grafana).
+- 🚦 **Load Balancer & Reverse Proxy**: Enrutamiento y balanceo de carga mediante Traefik.
+- 🔐 **Autenticación con Clerk**: Control de acceso granular, guards globales y decoradores `@Public()`.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+| Capa                            | Tecnología                                                                                                                              |
+| :------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| **Monorepo Engine**             | [Nx](https://nx.dev/) 23                                                                                                                |
+| **Backend Framework**           | [NestJS](https://nestjs.com/) 11 (Express)                                                                                              |
+| **Lenguaje**                    | [TypeScript](https://www.typescriptlang.org/) ~6.0 & [SWC](https://swc.rs/)                                                             |
+| **Base de Datos**               | [PostgreSQL](https://www.postgresql.org/) 16 + [Drizzle ORM](https://orm.drizzle.team/)                                                 |
+| **Autenticación**               | [Clerk](https://clerk.com/) (`@clerk/backend`)                                                                                          |
+| **Proxy Inverso / Balanceador** | [Traefik](https://traefik.io/) v3.1                                                                                                     |
+| **Logging**                     | [Pino](https://getpino.io/) + `pino-http` + `pino-loki`                                                                                 |
+| **Métricas**                    | [Prometheus](https://prometheus.io/) (`@willsoto/nestjs-prometheus`)                                                                    |
+| **Trazas Distribuidas**         | [Grafana Tempo](https://grafana.com/oss/tempo/) + OpenTelemetry SDK Node                                                                |
+| **Dashboards**                  | [Grafana](https://grafana.com/)                                                                                                         |
+| **Testing & Calidad**           | [Jest](https://jestjs.io/), [ESLint](https://eslint.org/), [Prettier](https://prettier.io/), [Husky](https://typicode.github.io/husky/) |
+
+---
+
+## 🏛️ Arquitectura del Proyecto
+
+El proyecto implementa los principios de **Clean Architecture** (Arquitectura Hexagonal / Puertos y Adaptadores) combinados con **Domain-Driven Design (DDD)**:
+
+```mermaid
+graph TD
+    App[apps/kardusbag - Controllers / Entrypoint] --> Application[libs/domains/bag/application - Use Cases & DTOs]
+    Application --> Domain[libs/domains/bag/domain - Entities & Repository Ports]
+    Infrastructure[libs/domains/bag/infrastructure - Drizzle Repositories] -. Implements .-> Domain
+    Infrastructure --> DB[libs/database - Drizzle Schemas & Client]
+    App --> Shared[libs/shared - Auth Guards & Filters]
 ```
 
-To create a production bundle:
+- **Domain Layer (`domain`)**: Entidades de negocio, Value Objects e interfaces de repositorios (puertos). No depende de ningún framework ni base de datos.
+- **Application Layer (`application`)**: Casos de uso (Use Cases) y DTOs de entrada/salida que orquestan las operaciones de negocio.
+- **Infrastructure Layer (`infrastructure`)**: Adaptadores secundarios (implementación de repositorios con Drizzle ORM, clientes de bases de datos, integraciones externas).
+- **Presentation / API Layer (`apps/kardusbag`)**: Controladores HTTP NestJS, Pipes de validación, filtros de excepciones globales y guards.
 
-```sh
-npx nx build kardusbag
+---
+
+## 📂 Estructura del Monorepo
+
+```plaintext
+kardusbag/
+├── apps/
+│   ├── kardusbag/            # API principal de KardusBag (E-Commerce)
+│   │   └── src/
+│   │       ├── app/          # Módulos, controladores y DTOs de transporte
+│   │       ├── tracing.ts    # Inicialización de OpenTelemetry
+│   │       └── main.ts       # Bootstrap de NestJS con ValidationPipe y Pino
+│   └── admin-api/            # API administrativa / backoffice
+│
+├── libs/
+│   ├── core/                 # Utilidades y abstracciones núcleo del dominio
+│   ├── database/             # Modelos Drizzle ORM, conexiones y migraciones SQL
+│   │   ├── migrations/       # Migraciones generadas por Drizzle Kit
+│   │   └── src/schema/       # Definición de tablas y relaciones (22 tablas)
+│   ├── domains/
+│   │   └── bag/              # Dominio de Bolsos/Productos (Clean Architecture)
+│   │       ├── application/  # Use Cases (CreateBag, GetBagById, etc.)
+│   │       ├── domain/       # Entidades e interfaces del repositorio
+│   │       └── infrastructure/ # Implementación con Drizzle
+│   ├── infra/                # Configuraciones de observabilidad y Dockerfiles
+│   │   ├── docker/           # Dockerfiles para despliegue de contenedores
+│   │   └── monitoring/       # Configs de Prometheus, Tempo y Loki
+│   └── shared/               # Filtros globales, guards de Clerk, decoradores
+│
+├── docker-compose.yml        # Stack completo de contenedores
+├── drizzle.config.ts         # Configuración de migraciones Drizzle
+└── package.json              # Dependencias y scripts del proyecto
 ```
 
-To see all available targets to run for a project, run:
+---
 
-```sh
-npx nx show project kardusbag
+## 📋 Requisitos Previos
+
+- [Node.js](https://nodejs.org/) `>= 20.x`
+- [pnpm](https://pnpm.io/) `>= 10.x`
+- [Docker](https://www.docker.com/) & Docker Compose
+
+---
+
+## 🔐 Variables de Entorno
+
+Crea un archivo `.env` en la raíz del proyecto basado en el siguiente ejemplo:
+
+```bash
+# BASE DE DATOS
+DATABASE_URL="postgresql://user:password@localhost:5432/platform_db"
+
+# OBSERVABILIDAD / MÉTRICAS
+PORT=3000
+OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318/v1/traces"
+
+# AUTENTICACIÓN (CLERK)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+---
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 🚀 Puesta en Marcha
 
-## Add new projects
+### 1. Infraestructura con Docker
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+Levanta la base de datos y toda la suite de observabilidad:
 
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/nest:app demo
+```bash
+docker compose up -d postgres prometheus tempo loki grafana traefik
 ```
 
-To generate a new library, use:
+### 2. Base de Datos y Migraciones
 
-```sh
-npx nx g @nx/node:lib mylib
+Genera y ejecuta las migraciones de PostgreSQL con Drizzle ORM:
+
+```bash
+# 1. Generar migración SQL a partir de los esquemas en libs/database/src/schema/
+pnpm db:generate
+
+# 2. Aplicar las migraciones a la base de datos activa
+pnpm db:migrate
+
+# 3. (Opcional) Abrir interfaz gráfica para explorar la base de datos
+pnpm db:studio
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### 3. Ejecución de las Aplicaciones
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Instala las dependencias y corre el servidor en modo desarrollo:
 
-## Set up CI!
+```bash
+# Instalar paquetes
+pnpm install
 
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
+# Iniciar la API principal con recarga en caliente
+pnpm start:dev
+# o directamente vía Nx:
+# npx nx serve kardusbag
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+La API estará disponible en: `http://localhost:3000/api`
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-### Step 2
+## 📊 Observabilidad y Monitoreo
 
-Use the following command to configure a CI workflow for your workspace:
+El entorno de desarrollo incluye integración completa de observabilidad lista para usar:
 
-```sh
-npx nx g ci-workflow
+| Servicio                | URL Local                                                              | Descripción / Credenciales                         |
+| :---------------------- | :--------------------------------------------------------------------- | :------------------------------------------------- |
+| **API Principal**       | [http://localhost:3000/api](http://localhost:3000/api)                 | Endpoint base de la aplicación                     |
+| **Métricas Prometheus** | [http://localhost:3000/api/metrics](http://localhost:3000/api/metrics) | Métricas expuestas en formato OpenMetrics          |
+| **Prometheus Server**   | [http://localhost:9090](http://localhost:9090)                         | Servidor de scraping de métricas                   |
+| **Grafana UI**          | [http://localhost:3001](http://localhost:3001)                         | Dashboard de métricas y trazas (`admin` / `admin`) |
+| **Grafana Tempo**       | [http://localhost:4318](http://localhost:4318)                         | Receptor OTLP HTTP de trazas distribuidas          |
+| **Grafana Loki**        | [http://localhost:3100](http://localhost:3100)                         | Agregador y receptor de logs                       |
+| **Traefik Dashboard**   | [http://localhost:8080](http://localhost:8080)                         | Panel de control de rutas y balanceador            |
+| **Drizzle Studio**      | [http://localhost:3003](http://localhost:3003)                         | GUI visualizador de PostgreSQL                     |
+
+---
+
+## 🔑 Autenticación y Seguridad
+
+- Las rutas de la API están protegidas por defecto mediante el `ClerkAuthGuard`.
+- Para marcar endpoints como públicos se utiliza el decorador `@Public()`.
+- Para generar un token de desarrollo de 30 días para pruebas en herramientas como Postman, Thunder Client o cURL:
+
+```bash
+node generar-bearer.js
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Incluye el encabezado HTTP en tus peticiones:
 
-## Install Nx Console
+```http
+Authorization: Bearer <TU_TOKEN>
+```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+---
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 📦 Scripts Disponibles
 
-## Useful links
+En `package.json` encontrarás los comandos listos para el ciclo de vida de desarrollo:
 
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/nest?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- `pnpm start:dev`: Levanta la aplicación `kardusbag` en modo desarrollo con SWC y watch mode.
+- `pnpm db:generate`: Genera los archivos de migración SQL basados en los esquemas de Drizzle.
+- `pnpm db:migrate`: Aplica las migraciones pendientes en PostgreSQL.
+- `pnpm db:studio`: Inicia Drizzle Studio en el puerto 3003.
+- `pnpm test:cov`: Ejecuta las pruebas unitarias y genera reporte de cobertura `lcov`.
+- `pnpm prepare`: Configura los hooks de Husky para Git.

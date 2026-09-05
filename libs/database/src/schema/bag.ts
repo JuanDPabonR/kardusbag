@@ -78,11 +78,13 @@ export const usersTable = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (table) => [
     // Índice crítico: acelera la validación del Guard en cada petición HTTP
     uniqueIndex('users_clerk_id_idx').on(table.clerkId),
     index('users_role_id_idx').on(table.roleId),
+    index('users_deleted_at_idx').on(table.deletedAt),
   ],
 );
 
@@ -131,33 +133,45 @@ export const addressTypeEnum = pgEnum('address_type', ['shipping', 'billing']);
 // 2. TAXONOMÍA: CATEGORÍAS Y COLECCIONES
 // =========================================================================
 
-export const categoriesTable = pgTable('categories', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  parentId: uuid('parent_id'),
-  name: varchar('name', { length: 100 }).notNull(),
-  slug: varchar('slug', { length: 120 }).notNull().unique(),
-  description: text('description'),
-  imageUrl: text('image_url'),
-  sortOrder: integer('sort_order').default(0).notNull(),
-  isActive: boolean('is_active').default(true).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const categoriesTable = pgTable(
+  'categories',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    parentId: uuid('parent_id'),
+    name: varchar('name', { length: 100 }).notNull(),
+    slug: varchar('slug', { length: 120 }).notNull().unique(),
+    description: text('description'),
+    imageUrl: text('image_url'),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('categories_deleted_at_idx').on(table.deletedAt)],
+);
 
-export const collectionsTable = pgTable('collections', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: varchar('name', { length: 150 }).notNull(),
-  slug: varchar('slug', { length: 170 }).notNull().unique(),
-  description: text('description'),
-  bannerUrl: text('banner_url'),
-  isActive: boolean('is_active').default(true).notNull(),
-  startsAt: timestamp('starts_at', { withTimezone: true }),
-  endsAt: timestamp('ends_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const collectionsTable = pgTable(
+  'collections',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 150 }).notNull(),
+    slug: varchar('slug', { length: 170 }).notNull().unique(),
+    description: text('description'),
+    bannerUrl: text('banner_url'),
+    isActive: boolean('is_active').default(true).notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('collections_deleted_at_idx').on(table.deletedAt), // <-- AGREGAR
+  ],
+);
 
 // =========================================================================
 // 3. PRODUCTO PRINCIPAL (Concepto del Bolso)
@@ -258,10 +272,12 @@ export const bagVariantsTable = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (table) => [
     index('variants_bag_id_idx').on(table.bagId),
     uniqueIndex('variants_sku_idx').on(table.sku),
+    index('variants_deleted_at_idx').on(table.deletedAt),
   ],
 );
 
@@ -318,24 +334,37 @@ export const bagImagesTable = pgTable(
 // =========================================================================
 
 // Perfiles de clientes vinculados a la cuenta de usuario
-export const customersTable = pgTable('customers', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  // Enlace opcional pero recomendado con usersTable
-  userId: uuid('user_id').references(() => usersTable.id, {
-    onDelete: 'set null',
-  }),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  phone: varchar('phone', { length: 30 }),
-  firstName: varchar('first_name', { length: 100 }).notNull(),
-  lastName: varchar('last_name', { length: 100 }).notNull(),
-  documentType: varchar('document_type', { length: 10 }).default('CC'),
-  documentNumber: varchar('document_number', { length: 30 }),
-  taxRegime: varchar('tax_regime', { length: 50 }),
-  isAcceptsMarketing: boolean('is_accepts_marketing').default(false).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const customersTable = pgTable(
+  'customers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // Enlace opcional pero recomendado con usersTable
+    userId: uuid('user_id').references(() => usersTable.id, {
+      onDelete: 'set null',
+    }),
+    email: varchar('email', { length: 255 }).notNull().unique(),
+    phone: varchar('phone', { length: 30 }),
+    firstName: varchar('first_name', { length: 100 }).notNull(),
+    lastName: varchar('last_name', { length: 100 }).notNull(),
+    documentType: varchar('document_type', { length: 10 }).default('CC'),
+    documentNumber: varchar('document_number', { length: 30 }),
+    taxRegime: varchar('tax_regime', { length: 50 }),
+    isAcceptsMarketing: boolean('is_accepts_marketing')
+      .default(false)
+      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('customers_user_id_idx').on(table.userId),
+    index('customers_deleted_at_idx').on(table.deletedAt),
+  ],
+);
 
 export const customerAddressesTable = pgTable('customer_addresses', {
   id: uuid('id').defaultRandom().primaryKey(),
