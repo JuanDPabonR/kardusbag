@@ -35,18 +35,23 @@ import { AuthModule } from './auth/auth.module';
               level: 'info',
             },
             // Envío en segundo plano hacia Loki
-            {
-              target: 'pino-loki',
-              options: {
-                batching: false,
-                host: 'http://localhost:3100',
-                labels: {
-                  app: 'kardusbag',
-                  env: process.env.NODE_ENV || 'development',
-                },
-              },
-              level: 'info',
-            },
+            // Solo agregar Loki si estás en producción o si está habilitado explícitamente
+            ...(process.env.ENABLE_LOKI === 'true'
+              ? [
+                  {
+                    target: 'pino-loki',
+                    options: {
+                      batching: false,
+                      host: process.env.LOKI_HOST || 'http://localhost:3100',
+                      labels: {
+                        app: 'kardusbag',
+                        env: process.env.NODE_ENV || 'development',
+                      },
+                    },
+                    level: 'info',
+                  },
+                ]
+              : []),
           ],
         },
       },
