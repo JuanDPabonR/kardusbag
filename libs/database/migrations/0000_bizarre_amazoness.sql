@@ -141,6 +141,7 @@ CREATE TABLE "customer_addresses" (
 --> statement-breakpoint
 CREATE TABLE "customers" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid,
 	"email" varchar(255) NOT NULL,
 	"phone" varchar(30),
 	"first_name" varchar(100) NOT NULL,
@@ -208,6 +209,15 @@ CREATE TABLE "payment_transactions" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "permissions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"slug" varchar(100) NOT NULL,
+	"name" varchar(100) NOT NULL,
+	"description" varchar(255),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "permissions_slug_unique" UNIQUE("slug")
+);
+--> statement-breakpoint
 CREATE TABLE "reviews" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"bag_id" uuid NOT NULL,
@@ -219,6 +229,20 @@ CREATE TABLE "reviews" (
 	"comment" text,
 	"is_approved" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "role_permissions" (
+	"role_id" uuid NOT NULL,
+	"permission_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "roles" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(50) NOT NULL,
+	"description" varchar(255),
+	"is_default" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "roles_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
 CREATE TABLE "shipments" (
@@ -252,6 +276,18 @@ CREATE TABLE "stock_reservations" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"clerk_id" varchar(100) NOT NULL,
+	"email" varchar(255) NOT NULL,
+	"role_id" uuid NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "users_clerk_id_unique" UNIQUE("clerk_id"),
+	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
 ALTER TABLE "bag_images" ADD CONSTRAINT "bag_images_bag_id_bags_id_fk" FOREIGN KEY ("bag_id") REFERENCES "public"."bags"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "bag_images" ADD CONSTRAINT "bag_images_variant_id_bag_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."bag_variants"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "bag_variants" ADD CONSTRAINT "bag_variants_bag_id_bags_id_fk" FOREIGN KEY ("bag_id") REFERENCES "public"."bags"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -261,6 +297,7 @@ ALTER TABLE "bags_to_collections" ADD CONSTRAINT "bags_to_collections_collection
 ALTER TABLE "cart_items" ADD CONSTRAINT "cart_items_cart_id_shopping_carts_id_fk" FOREIGN KEY ("cart_id") REFERENCES "public"."shopping_carts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "cart_items" ADD CONSTRAINT "cart_items_variant_id_bag_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."bag_variants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "customer_addresses" ADD CONSTRAINT "customer_addresses_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "customers" ADD CONSTRAINT "customers_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_variant_id_bag_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."bag_variants"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_timeline_events" ADD CONSTRAINT "order_timeline_events_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -272,10 +309,13 @@ ALTER TABLE "payment_transactions" ADD CONSTRAINT "payment_transactions_order_id
 ALTER TABLE "reviews" ADD CONSTRAINT "reviews_bag_id_bags_id_fk" FOREIGN KEY ("bag_id") REFERENCES "public"."bags"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reviews" ADD CONSTRAINT "reviews_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reviews" ADD CONSTRAINT "reviews_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_permission_id_permissions_id_fk" FOREIGN KEY ("permission_id") REFERENCES "public"."permissions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipments" ADD CONSTRAINT "shipments_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shopping_carts" ADD CONSTRAINT "shopping_carts_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shopping_carts" ADD CONSTRAINT "shopping_carts_applied_coupon_id_coupons_id_fk" FOREIGN KEY ("applied_coupon_id") REFERENCES "public"."coupons"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_reservations" ADD CONSTRAINT "stock_reservations_variant_id_bag_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."bag_variants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "images_bag_id_idx" ON "bag_images" USING btree ("bag_id");--> statement-breakpoint
 CREATE INDEX "images_variant_id_idx" ON "bag_images" USING btree ("variant_id");--> statement-breakpoint
 CREATE INDEX "variants_bag_id_idx" ON "bag_variants" USING btree ("bag_id");--> statement-breakpoint
@@ -287,5 +327,8 @@ CREATE UNIQUE INDEX "bag_collection_pk" ON "bags_to_collections" USING btree ("b
 CREATE INDEX "orders_customer_idx" ON "orders" USING btree ("customer_id");--> statement-breakpoint
 CREATE INDEX "orders_status_idx" ON "orders" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "reviews_bag_idx" ON "reviews" USING btree ("bag_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "role_permission_pk" ON "role_permissions" USING btree ("role_id","permission_id");--> statement-breakpoint
 CREATE INDEX "reservations_variant_id_idx" ON "stock_reservations" USING btree ("variant_id");--> statement-breakpoint
-CREATE INDEX "reservations_expires_at_idx" ON "stock_reservations" USING btree ("expires_at");
+CREATE INDEX "reservations_expires_at_idx" ON "stock_reservations" USING btree ("expires_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "users_clerk_id_idx" ON "users" USING btree ("clerk_id");--> statement-breakpoint
+CREATE INDEX "users_role_id_idx" ON "users" USING btree ("role_id");
