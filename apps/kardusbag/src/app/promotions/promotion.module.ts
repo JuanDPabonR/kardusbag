@@ -1,17 +1,11 @@
 import { Module } from '@nestjs/common';
-import { db } from '@kardusbag/database';
+import { PromotionsDomainModule } from '@kardusbag/promotions';
 import { PromotionsController } from './controllers/promotions.controller';
-import { PromotionsService } from './services/promotions.service';
+import { PromotionsAdminController } from './controllers/promotions-admin.controller';
 
 @Module({
-  controllers: [PromotionsController],
-  providers: [
-    PromotionsService,
-    {
-      provide: 'DRIZZLE_DB',
-      useValue: db,
-    },
-  ],
-  exports: [PromotionsService],
+  imports: [PromotionsDomainModule],
+  controllers: [PromotionsController, PromotionsAdminController],
+  exports: [PromotionsDomainModule],
 })
 export class PromotionsModule {}

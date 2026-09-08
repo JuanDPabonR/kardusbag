@@ -1,8 +1,13 @@
-// apps/kardusbag/src/promotions/promotion-rule.engine.ts
+import {
+  DiscountType,
+  PromotionAttributeRules,
+  PromotionScope,
+} from '../entities/promotion.entity';
+
 export interface VariantEvaluationItem {
   variantId: string;
   sku: string;
-  price: number; // bag_variants.price
+  price: number;
   quantity: number;
   colorName: string;
   bag: {
@@ -20,22 +25,10 @@ export interface PromotionEvaluationData {
   id: string;
   code?: string | null;
   name: string;
-  type: 'percentage' | 'fixed_amount' | 'free_shipping';
+  type: DiscountType;
   value: number;
-  scope:
-    | 'global'
-    | 'categories'
-    | 'collections'
-    | 'specific_bags'
-    | 'specific_variants'
-    | 'attributes';
-  attributeRules?: {
-    material?: string;
-    isWaterResistant?: boolean;
-    hasLaptopSleeve?: boolean;
-    minLaptopInches?: number;
-    colorNames?: string[];
-  } | null;
+  scope: PromotionScope;
+  attributeRules?: PromotionAttributeRules | null;
   targetVariantIds: string[];
   targetBagIds: string[];
   targetCategoryIds: string[];
@@ -136,6 +129,6 @@ export class PromotionRuleEngine {
     if (promo.type === 'fixed_amount') {
       return Math.min(promo.value * quantity, totalLine);
     }
-    return 0; // free_shipping no afecta el precio del ítem
+    return 0; // free_shipping no descuenta directamente el precio del ítem
   }
 }

@@ -1,0 +1,8 @@
+{
+  "name": "promotions",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/domains/promotions/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {}
+}
