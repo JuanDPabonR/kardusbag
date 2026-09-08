@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { BagDomainModule } from '@kardusbag/bag';
 import { BagController } from './bags/bag.controller';
-import { AllExceptionsFilter, ClerkAuthGuard } from '@kardusbag/shared';
+import {
+  AllExceptionsFilter,
+  ClerkAuthGuard,
+  ResponseInterceptor,
+} from '@kardusbag/shared';
 import { AuthModule } from './auth/auth.module';
 import { PromotionsModule } from './promotions/promotion.module';
 import { CollectionsModule } from './collections/collections.module';
@@ -71,6 +75,10 @@ import { CollectionsModule } from './collections/collections.module';
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
     },
     {
       provide: APP_GUARD,

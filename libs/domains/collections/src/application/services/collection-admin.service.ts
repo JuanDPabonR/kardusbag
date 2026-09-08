@@ -11,6 +11,8 @@ import {
   CollectionSlugAlreadyExistsException,
   CollectionNotFoundException,
 } from '../../domain/exceptions/collection.exception';
+import { PaginatedResult, type PaginationParams } from '@kardusbag/shared';
+import type { CollectionWithBags } from '../../domain/ports/collection-repository.port';
 
 export type collection = Omit<
   CollectionProps,
@@ -79,8 +81,10 @@ export class CollectionsAdminService {
     return result;
   }
 
-  async findAll() {
-    return await this.repository.findAll();
+  async findAll(
+    filter?: PaginationParams,
+  ): Promise<PaginatedResult<CollectionWithBags>> {
+    return await this.repository.findAll(filter);
   }
 
   async update(id: string, dto: collection): Promise<Collection> {

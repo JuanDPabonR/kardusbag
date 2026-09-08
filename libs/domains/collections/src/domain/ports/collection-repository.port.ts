@@ -1,4 +1,5 @@
 import { Collection } from '../entities/collection';
+import { PaginatedResult, type PaginationParams } from '@kardusbag/shared';
 
 export const COLLECTION_REPOSITORY_PORT = Symbol('COLLECTION_REPOSITORY_PORT');
 
@@ -17,7 +18,9 @@ export interface CollectionRepositoryPort {
   findById(id: string): Promise<Collection | null>;
   findByIdWithBags(id: string): Promise<CollectionWithBags | null>;
   findBySlug(slug: string): Promise<Collection | null>;
-  findAll(): Promise<CollectionWithBags[]>;
+  findAll(
+    filter?: PaginationParams,
+  ): Promise<PaginatedResult<CollectionWithBags>>;
   addBags(collectionId: string, bagIds: string[]): Promise<Collection>;
   removeBags(collectionId: string, bagIds: string[]): Promise<Collection>;
 }

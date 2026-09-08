@@ -6,11 +6,13 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
+import { PaginationDto, ResponseMessage } from '@kardusbag/shared';
 import { CollectionsAdminService } from '@kardusbag/collections';
 import {
   CreateCollectionDto,
@@ -43,9 +45,10 @@ export class CollectionsAdminController {
   }
 
   @Get()
-  async findAll() {
-    const list = await this.collectionsAdminService.findAll();
-    return list.map(({ collection, totalBags, bags }) => {
+  @ResponseMessage('Colecciones obtenidas exitosamente')
+  async findAll(@Query() query: PaginationDto) {
+    const paginated = await this.collectionsAdminService.findAll(query);
+    return paginated.map(({ collection, totalBags, bags }) => {
       const data = collection.toPrimitives();
       return {
         id: data.id,

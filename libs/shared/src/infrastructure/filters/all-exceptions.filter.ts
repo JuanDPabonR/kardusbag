@@ -123,6 +123,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     response.status(status).json({
+      status,
       statusCode: status,
       error,
       message,

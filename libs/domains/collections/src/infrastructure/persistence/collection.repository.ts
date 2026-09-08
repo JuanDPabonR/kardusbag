@@ -8,10 +8,12 @@ import {
   bagsTable,
   bagsToCollectionsTable,
   collectionsTable,
+  paginate,
 } from '@kardusbag/database';
 import { Collection } from '../../domain/entities/collection';
 import { CollectionMapper } from './collection.mapper';
 import { and, count, eq, inArray, isNull } from 'drizzle-orm';
+import { PaginatedResult, PaginationParams } from '@kardusbag/shared';
 
 export const DRIZZLE_DB = Symbol('DRIZZLE_DB');
 
@@ -108,8 +110,11 @@ export class CollectionRepository implements CollectionRepositoryPort {
     };
   }
 
-  async findAll(): Promise<CollectionWithBags[]> {
-    const raw = await this.db.query.collectionsTable.findMany({
+  async findAll(
+    filter?: PaginationParams,
+  ): Promise<PaginatedResult<CollectionWithBags>> {
+    return paginate(this.db, collectionsTable, {
+      filter,
       where: isNull(collectionsTable.deletedAt),
       with: {
         bags: {
@@ -118,18 +123,17 @@ export class CollectionRepository implements CollectionRepositoryPort {
           },
         },
       },
-    });
+      transform: (c) => {
+        const validBags = c.bags
+          .map((rel) => rel.bag)
+          .filter((b) => !b.deletedAt);
 
-    return raw.map((c) => {
-      const validBags = c.bags
-        .map((rel) => rel.bag)
-        .filter((b) => !b.deletedAt);
-
-      return {
-        collection: CollectionMapper.toDomain(c),
-        totalBags: validBags.length,
-        bags: validBags,
-      };
+        return {
+          collection: CollectionMapper.toDomain(c),
+          totalBags: validBags.length,
+          bags: validBags,
+        };
+      },
     });
   }
 
