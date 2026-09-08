@@ -46,12 +46,12 @@ export class BagRepository implements BagRepositoryPort {
   }
 
   async save(bag: Bag): Promise<void> {
-    const raw = BagMapper.toPersistence(bag);
+    const raw = BagMapper.toPersistenceInsert(bag);
     await this.db.insert(bagsTable).values(raw);
   }
 
   async update(bag: Bag): Promise<void> {
-    const raw = BagMapper.toPersistence(bag);
+    const raw = BagMapper.toPersistenceUpdate(bag);
     await this.db
       .update(bagsTable)
       .set(raw)

@@ -20,7 +20,8 @@
       "@kardusbag/database": ["./libs/database/src/index.ts"],
       "@kardusbag/bag": ["./libs/domains/bag/src/index.ts"],
       "@kardusbag/promotions": ["./libs/domains/promotions/src/index.ts"],
-      "@kardusbag/shared": ["./libs/shared/src/index.ts"]
+      "@kardusbag/shared": ["./libs/shared/src/index.ts"],
+      "@kardusbag/collections": ["./libs/domains/collections/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

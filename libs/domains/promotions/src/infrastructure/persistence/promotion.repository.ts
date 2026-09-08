@@ -14,7 +14,8 @@ import {
   PromotionRepositoryPort,
   CartEvaluationItem,
 } from '../../domain/ports/promotion-repository.port';
-import { Promotion } from '../../domain/entities/promotion.entity';
+import { Promotion } from '../../domain/entities/promotion';
+import { PromotionMapper } from './promotion.mapper';
 
 export const DRIZZLE_DB = Symbol('DRIZZLE_DB');
 
@@ -53,53 +54,6 @@ export class PromotionRepository implements PromotionRepositoryPort {
     };
   }
 
-  private toDomain(
-    raw: any,
-    targets?: {
-      targetVariantIds?: string[];
-      targetBagIds?: string[];
-      targetCategoryIds?: string[];
-      targetCollectionIds?: string[];
-    },
-  ): Promotion {
-    return new Promotion({
-      id: raw.id,
-      name: raw.name,
-      code: raw.code,
-      type: raw.type,
-      value: Number(raw.value),
-      scope: raw.scope,
-      attributeRules: raw.attributeRules,
-      minOrderSubtotal: raw.minOrderSubtotal ? Number(raw.minOrderSubtotal) : 0,
-      maxDiscountAmount: raw.maxDiscountAmount
-        ? Number(raw.maxDiscountAmount)
-        : null,
-      usageLimitTotal: raw.usageLimitTotal,
-      usageLimitPerCustomer: raw.usageLimitPerCustomer,
-      currentUsageCount: raw.currentUsageCount,
-      startsAt: new Date(raw.startsAt),
-      expiresAt: raw.expiresAt ? new Date(raw.expiresAt) : null,
-      isActive: raw.isActive,
-      deletedAt: raw.deletedAt ? new Date(raw.deletedAt) : null,
-      createdAt: new Date(raw.createdAt),
-      updatedAt: new Date(raw.updatedAt),
-      targetVariantIds:
-        targets?.targetVariantIds ??
-        raw.targetVariants?.map((v: any) => v.variantId) ??
-        [],
-      targetBagIds:
-        targets?.targetBagIds ?? raw.targetBags?.map((b: any) => b.bagId) ?? [],
-      targetCategoryIds:
-        targets?.targetCategoryIds ??
-        raw.targetCategories?.map((c: any) => c.categoryId) ??
-        [],
-      targetCollectionIds:
-        targets?.targetCollectionIds ??
-        raw.targetCollections?.map((col: any) => col.collectionId) ??
-        [],
-    });
-  }
-
   async findById(id: string): Promise<Promotion | null> {
     const raw = await this.db.query.promotionsTable.findFirst({
       where: and(eq(promotionsTable.id, id), isNull(promotionsTable.deletedAt)),
@@ -112,7 +66,7 @@ export class PromotionRepository implements PromotionRepositoryPort {
     });
 
     if (!raw) return null;
-    return this.toDomain(raw);
+    return PromotionMapper.toDomain(raw);
   }
 
   async findByCode(code: string): Promise<Promotion | null> {
@@ -125,7 +79,7 @@ export class PromotionRepository implements PromotionRepositoryPort {
 
     if (!raw) return null;
     const targets = await this.loadPromotionTargets(raw.id);
-    return this.toDomain(raw, targets);
+    return PromotionMapper.toDomain(raw, targets);
   }
 
   async findActiveCoupon(
@@ -147,7 +101,7 @@ export class PromotionRepository implements PromotionRepositoryPort {
 
     if (!raw) return null;
     const targets = await this.loadPromotionTargets(raw.id);
-    return this.toDomain(raw, targets);
+    return PromotionMapper.toDomain(raw, targets);
   }
 
   async findActiveAutomaticPromotions(now = new Date()): Promise<Promotion[]> {
@@ -167,7 +121,7 @@ export class PromotionRepository implements PromotionRepositoryPort {
     return await Promise.all(
       raws.map(async (raw) => {
         const targets = await this.loadPromotionTargets(raw.id);
-        return this.toDomain(raw, targets);
+        return PromotionMapper.toDomain(raw, targets);
       }),
     );
   }
@@ -184,38 +138,17 @@ export class PromotionRepository implements PromotionRepositoryPort {
       },
     });
 
-    return raws.map((raw) => this.toDomain(raw));
+    return raws.map((raw) => PromotionMapper.toDomain(raw));
   }
 
   async save(promotion: Promotion): Promise<Promotion> {
     const props = promotion.toPrimitives();
+    const rawInsert = PromotionMapper.toPersistenceInsert(promotion);
 
     return await this.db.transaction(async (tx) => {
       const [newRow] = await tx
         .insert(promotionsTable)
-        .values({
-          id: props.id,
-          name: props.name,
-          code: props.code || null,
-          type: props.type as any,
-          value: props.value.toFixed(2),
-          scope: props.scope as any,
-          attributeRules: props.attributeRules || {},
-          minOrderSubtotal: props.minOrderSubtotal
-            ? props.minOrderSubtotal.toFixed(2)
-            : '0.00',
-          maxDiscountAmount: props.maxDiscountAmount
-            ? props.maxDiscountAmount.toFixed(2)
-            : null,
-          usageLimitTotal: props.usageLimitTotal || null,
-          usageLimitPerCustomer: props.usageLimitPerCustomer ?? 1,
-          currentUsageCount: props.currentUsageCount ?? 0,
-          startsAt: props.startsAt,
-          expiresAt: props.expiresAt || null,
-          isActive: props.isActive ?? true,
-          createdAt: props.createdAt,
-          updatedAt: props.updatedAt,
-        })
+        .values(rawInsert)
         .returning();
 
       if (props.scope === 'categories' && props.targetCategoryIds?.length) {
@@ -257,7 +190,7 @@ export class PromotionRepository implements PromotionRepositoryPort {
         );
       }
 
-      return this.toDomain(newRow, {
+      return PromotionMapper.toDomain(newRow, {
         targetCategoryIds: props.targetCategoryIds,
         targetCollectionIds: props.targetCollectionIds,
         targetBagIds: props.targetBagIds,
@@ -267,31 +200,13 @@ export class PromotionRepository implements PromotionRepositoryPort {
   }
 
   async update(promotion: Promotion): Promise<void> {
-    const props = promotion.toPrimitives();
+    const rawUpdate = PromotionMapper.toPersistenceUpdate(promotion);
+    const { id } = promotion.toPrimitives();
+
     await this.db
       .update(promotionsTable)
-      .set({
-        name: props.name,
-        code: props.code || null,
-        type: props.type as any,
-        value: props.value.toFixed(2),
-        scope: props.scope as any,
-        attributeRules: props.attributeRules || {},
-        minOrderSubtotal: props.minOrderSubtotal
-          ? props.minOrderSubtotal.toFixed(2)
-          : '0.00',
-        maxDiscountAmount: props.maxDiscountAmount
-          ? props.maxDiscountAmount.toFixed(2)
-          : null,
-        usageLimitTotal: props.usageLimitTotal || null,
-        usageLimitPerCustomer: props.usageLimitPerCustomer ?? 1,
-        currentUsageCount: props.currentUsageCount ?? 0,
-        startsAt: props.startsAt,
-        expiresAt: props.expiresAt || null,
-        isActive: props.isActive ?? true,
-        updatedAt: new Date(),
-      })
-      .where(eq(promotionsTable.id, props.id));
+      .set(rawUpdate)
+      .where(eq(promotionsTable.id, id));
   }
 
   async softDelete(id: string): Promise<void> {

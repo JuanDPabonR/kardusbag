@@ -54,6 +54,13 @@ export class BagMapper {
    * Convierte la entidad de dominio Bag al esquema de persistencia para guardar en DB
    */
   public static toPersistence(domain: Bag): BagDbInsert {
+    return this.toPersistenceInsert(domain);
+  }
+
+  /**
+   * Convierte la entidad de dominio Bag al esquema de inserción en DB
+   */
+  public static toPersistenceInsert(domain: Bag): BagDbInsert {
     const props = domain.toPrimitives();
 
     return {
@@ -91,6 +98,49 @@ export class BagMapper {
       metadata: props.metadata ?? {},
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
+      deletedAt: props.deletedAt ?? null,
+    };
+  }
+
+  /**
+   * Convierte la entidad de dominio Bag al esquema de actualización en DB
+   */
+  public static toPersistenceUpdate(domain: Bag): Partial<BagDbInsert> {
+    const props = domain.toPrimitives();
+
+    return {
+      categoryId: props.categoryId ?? null,
+      name: props.name,
+      slug: props.slug,
+      skuPrefix: props.skuPrefix ?? null,
+      description: props.description ?? null,
+      shortDescription: props.shortDescription ?? null,
+      careInstructions: props.careInstructions ?? null,
+      basePrice: props.basePrice.toString(),
+      compareAtPrice:
+        props.compareAtPrice != null ? props.compareAtPrice.toString() : null,
+      taxRate: props.taxRate != null ? props.taxRate.toString() : '19.00',
+      currency: props.currency ?? 'COP',
+      material: props.material ?? null,
+      liningMaterial: props.liningMaterial ?? null,
+      hardwareMaterial: props.hardwareMaterial ?? null,
+      dimensions: props.dimensions ?? null,
+      capacityLiters:
+        props.capacityLiters != null ? props.capacityLiters.toString() : null,
+      weightGrams: props.weightGrams ?? 600,
+      hasLaptopSleeve: props.hasLaptopSleeve ?? false,
+      maxLaptopSizeInches:
+        props.maxLaptopSizeInches != null
+          ? props.maxLaptopSizeInches.toString()
+          : null,
+      isWaterResistant: props.isWaterResistant ?? false,
+      isActive: props.isActive ?? true,
+      isFeatured: props.isFeatured ?? false,
+      isNewArrival: props.isNewArrival ?? false,
+      metaTitle: props.metaTitle ?? null,
+      metaDescription: props.metaDescription ?? null,
+      metadata: props.metadata ?? {},
+      updatedAt: new Date(),
       deletedAt: props.deletedAt ?? null,
     };
   }

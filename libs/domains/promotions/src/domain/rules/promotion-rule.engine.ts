@@ -2,7 +2,7 @@ import {
   DiscountType,
   PromotionAttributeRules,
   PromotionScope,
-} from '../entities/promotion.entity';
+} from '../entities/promotion';
 
 export interface VariantEvaluationItem {
   variantId: string;

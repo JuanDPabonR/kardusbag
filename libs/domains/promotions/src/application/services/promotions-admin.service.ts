@@ -6,35 +6,38 @@ import {
 } from '../../domain/ports/promotion-repository.port';
 import {
   Promotion,
-  type DiscountType,
-  type PromotionScope,
-  type PromotionAttributeRules,
-} from '../../domain/entities/promotion.entity';
+  type PromotionEntity,
+} from '../../domain/entities/promotion';
 import {
   InvalidPromotionDataException,
   PromotionConflictException,
   PromotionNotFoundException,
 } from '../../domain/exceptions/promotion.exceptions';
 
-export interface CreatePromotion {
-  name: string;
-  code?: string | null;
-  type: DiscountType;
-  value: number;
-  scope: PromotionScope;
-  attributeRules?: PromotionAttributeRules | null;
-  minOrderSubtotal?: number;
-  maxDiscountAmount?: number | null;
-  usageLimitTotal?: number | null;
-  usageLimitPerCustomer?: number;
+export type CreatePromotionCommand = Omit<
+  PromotionEntity,
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'deletedAt'
+  | 'currentUsageCount'
+  | 'startsAt'
+  | 'expiresAt'
+  | 'targetVariantIds'
+  | 'targetBagIds'
+  | 'targetCategoryIds'
+  | 'targetCollectionIds'
+> & {
   startsAt?: Date | string;
   expiresAt?: Date | string | null;
-  isActive?: boolean;
   categoryIds?: string[];
   collectionIds?: string[];
   bagIds?: string[];
   variantIds?: string[];
-}
+};
+
+export type CreatePromotionDto = CreatePromotionCommand;
+export type CreatePromotion = CreatePromotionDto;
 
 @Injectable()
 export class PromotionsAdminService {

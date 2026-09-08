@@ -9,3 +9,7 @@ export * from './application/use-cases/create-bag.use-case';
 export * from './domain/entities/bag.entity';
 export * from './domain/exceptions/bag.exceptions';
 export * from './domain/ports/bag-repository.port';
+
+// Infraestructura y Persistencia
+export * from './infrastructure/persistence/bag.mapper';
+export * from './infrastructure/persistence/bag.repository';

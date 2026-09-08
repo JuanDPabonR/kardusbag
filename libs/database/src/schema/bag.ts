@@ -714,3 +714,7 @@ export const bagsToCollectionsRelations = relations(
     }),
   }),
 );
+
+export const collectionsRelations = relations(collectionsTable, ({ many }) => ({
+  bags: many(bagsToCollectionsTable),
+}));

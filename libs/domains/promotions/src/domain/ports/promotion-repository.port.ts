@@ -1,4 +1,4 @@
-import { Promotion } from '../entities/promotion.entity';
+import { Promotion } from '../entities/promotion';
 import { VariantEvaluationItem } from '../rules/promotion-rule.engine';
 
 export const PROMOTION_REPOSITORY_PORT = Symbol('PROMOTION_REPOSITORY_PORT');
