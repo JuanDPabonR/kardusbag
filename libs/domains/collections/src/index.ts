@@ -8,6 +8,7 @@ export * from './domain/ports/collection-repository.port';
 
 // Servicios de Aplicación
 export * from './application/services/collection-admin.service';
+export * from './application/services/collection.service';
 
 // Infraestructura y Persistencia
 export * from './infrastructure/persistence/collection.mapper';

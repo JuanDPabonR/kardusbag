@@ -14,7 +14,7 @@ import {
 import { PaginatedResult, type PaginationParams } from '@kardusbag/shared';
 import type { CollectionWithBags } from '../../domain/ports/collection-repository.port';
 
-export type collection = Omit<
+export type collectionAdmin = Omit<
   CollectionProps,
   | 'id'
   | 'createdAt'
@@ -39,7 +39,7 @@ export class CollectionsAdminService {
     private readonly repository: CollectionRepositoryPort,
   ) {}
 
-  async create(collection: collection): Promise<Collection> {
+  async create(collection: collectionAdmin): Promise<Collection> {
     const slug = collection.slug
       ? Collection.generateSlug(collection.slug)
       : Collection.generateSlug(collection.name);
@@ -73,21 +73,7 @@ export class CollectionsAdminService {
     return collection;
   }
 
-  async findByIdWithBags(id: string) {
-    const result = await this.repository.findByIdWithBags(id);
-    if (!result) {
-      throw new CollectionNotFoundException(id);
-    }
-    return result;
-  }
-
-  async findAll(
-    filter?: PaginationParams,
-  ): Promise<PaginatedResult<CollectionWithBags>> {
-    return await this.repository.findAll(filter);
-  }
-
-  async update(id: string, dto: collection): Promise<Collection> {
+  async update(id: string, dto: collectionAdmin): Promise<Collection> {
     const collection = await this.findById(id);
 
     collection.updateDetails({
