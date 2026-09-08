@@ -15,6 +15,20 @@
       "when": 1788592680309,
       "tag": "0001_lush_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788825270062,
+      "tag": "0002_large_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788825875165,
+      "tag": "0003_tearful_shadowcat",
+      "breakpoints": true
     }
   ]
 }

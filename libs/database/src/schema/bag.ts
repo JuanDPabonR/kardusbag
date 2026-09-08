@@ -13,10 +13,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-
-// =========================================================================
-// 0. CONTROL DE ACCESO, USUARIOS Y ROLES (RBAC + CLERK)
-// =========================================================================
+import { promotionsTable } from './promotion'; // Ajusta la ruta a donde guardaste promotionsTable
 
 // Catálogo de roles del sistema (ej: 'admin', 'customer', 'warehouse', 'support')
 export const rolesTable = pgTable('roles', {
@@ -119,12 +116,6 @@ export const shipmentStatusEnum = pgEnum('shipment_status', [
   'delivered',
   'incident_in_delivery',
   'returned_to_sender',
-]);
-
-export const discountTypeEnum = pgEnum('discount_type', [
-  'percentage',
-  'fixed_amount',
-  'free_shipping',
 ]);
 
 export const addressTypeEnum = pgEnum('address_type', ['shipping', 'billing']);
@@ -389,39 +380,25 @@ export const customerAddressesTable = pgTable('customer_addresses', {
 // 7. MOTOR DE CUPONES Y DESCUENTOS
 // =========================================================================
 
-export const couponsTable = pgTable('coupons', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  code: varchar('code', { length: 50 }).notNull().unique(),
-  type: discountTypeEnum('type').notNull(),
-  value: numeric('value', { precision: 10, scale: 2 }).notNull(),
-  minOrderSubtotal: numeric('min_order_subtotal', { precision: 12, scale: 2 }),
-  maxDiscountAmount: numeric('max_discount_amount', {
-    precision: 12,
-    scale: 2,
-  }),
-  usageLimitTotal: integer('usage_limit_total'),
-  usageLimitPerCustomer: integer('usage_limit_per_customer').default(1),
-  currentUsageCount: integer('current_usage_count').default(0).notNull(),
-  startsAt: timestamp('starts_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }),
-  isActive: boolean('is_active').default(true).notNull(),
-});
+// Se crea otro archivo promotion.ts para separar
 
 // =========================================================================
 // 8. CARRITO DE COMPRAS
 // =========================================================================
 
+// En shoppingCartsTable:
 export const shoppingCartsTable = pgTable('shopping_carts', {
   id: uuid('id').defaultRandom().primaryKey(),
   sessionId: varchar('session_id', { length: 255 }),
   customerId: uuid('customer_id').references(() => customersTable.id, {
     onDelete: 'cascade',
   }),
-  appliedCouponId: uuid('applied_coupon_id').references(() => couponsTable.id, {
-    onDelete: 'set null',
-  }),
+  appliedCouponId: uuid('applied_coupon_id').references(
+    () => promotionsTable.id,
+    {
+      onDelete: 'set null',
+    },
+  ),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -464,7 +441,8 @@ export const ordersTable = pgTable(
       () => customerAddressesTable.id,
       { onDelete: 'set null' },
     ),
-    couponId: uuid('coupon_id').references(() => couponsTable.id, {
+    // 👇 Cambiar couponsTable por promotionsTable:
+    couponId: uuid('coupon_id').references(() => promotionsTable.id, {
       onDelete: 'set null',
     }),
     status: orderStatusEnum('status').default('pending_payment').notNull(),
@@ -696,3 +674,43 @@ export const ordersRelations = relations(ordersTable, ({ one, many }) => ({
     references: [shipmentsTable.orderId],
   }),
 }));
+
+export const shoppingCartsRelations = relations(
+  shoppingCartsTable,
+  ({ one, many }) => ({
+    customer: one(customersTable, {
+      fields: [shoppingCartsTable.customerId],
+      references: [customersTable.id],
+    }),
+    appliedCoupon: one(promotionsTable, {
+      fields: [shoppingCartsTable.appliedCouponId],
+      references: [promotionsTable.id],
+    }),
+    items: many(cartItemsTable),
+  }),
+);
+
+export const cartItemsRelations = relations(cartItemsTable, ({ one }) => ({
+  cart: one(shoppingCartsTable, {
+    fields: [cartItemsTable.cartId],
+    references: [shoppingCartsTable.id],
+  }),
+  variant: one(bagVariantsTable, {
+    fields: [cartItemsTable.variantId],
+    references: [bagVariantsTable.id],
+  }),
+}));
+
+export const bagsToCollectionsRelations = relations(
+  bagsToCollectionsTable,
+  ({ one }) => ({
+    bag: one(bagsTable, {
+      fields: [bagsToCollectionsTable.bagId],
+      references: [bagsTable.id],
+    }),
+    collection: one(collectionsTable, {
+      fields: [bagsToCollectionsTable.collectionId],
+      references: [collectionsTable.id],
+    }),
+  }),
+);

@@ -6,6 +6,7 @@ import { BagDomainModule } from '@kardusbag/bag';
 import { BagController } from './bags/bag.controller';
 import { AllExceptionsFilter, ClerkAuthGuard } from '@kardusbag/shared';
 import { AuthModule } from './auth/auth.module';
+import { PromotionsModule } from './promotions/promotion.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { AuthModule } from './auth/auth.module';
     }),
     BagDomainModule,
     AuthModule,
+    PromotionsModule,
   ],
   controllers: [BagController],
   providers: [
